@@ -1,33 +1,67 @@
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.remote.webelement import WebElement
-from typing import *
+import requests, calendar, json
+from datetime import datetime
 
-option = Options()
-option.add_argument('--start-maximized')
 
-# start chrome
-webdriver = webdriver.Chrome(chrome_options=option)
+def login(loginInfo, session):
+    URL = "http://www.futsalbase.com/api/login"
+    params = {
+        "id": loginInfo.get("id"),
+        "password": loginInfo.get("password")
+    }
+    # activate session
+    res = session.post(URL, params)
+    print("[Login Response Code] : ", res.status_code)
 
-# get to login page
-webdriver.get("https://yeyak.seoul.go.kr/")
-webdriver.find_element_by_class_name("state").find_element_by_css_selector("a").click()
 
-# excute login
-input_id = webdriver.find_element_by_id("userid")
-input_id.send_keys('dataenggu')
-input_id = webdriver.find_element_by_id("userpwd")
-input_id.send_keys('Solda9010!')
+def getDateList():
+    targetYear = datetime.today().year
+    targetMonth = datetime.today().month + 1
+    if targetMonth == 1: targetYear += 1
 
-submitBtn = webdriver.find_element_by_class_name("btn_login")
-submitBtn.submit()
+    targetMonthInfo = calendar.monthrange(targetYear, targetMonth)
 
-# move to soccer ground reservation webpage
-webdriver.get("https://yeyak.seoul.go.kr/web/search/selectPageListDetailSearchImg.do?code=T100&dCode=T107")
+    # 5 and 6 are sat, sun respectively
+    date_firstSaturday = abs(5 - targetMonthInfo[0]) if targetMonthInfo[0] < 6 else 6
+    date_firstSunday = abs(6 - targetMonthInfo[0])
+    days = targetMonthInfo[1]
 
-# get every ground item as a list
-board = webdriver.find_element_by_class_name("img_board")
-items: List[WebElement] = board.find_elements_by_xpath("li")
-for ele in items:
-    print(ele.text)
+    date_list = []
+    for i in range(date_firstSaturday, days, 7):
+        date_list.append(
+            str(datetime.strptime(str(targetYear) + "-" + str(targetMonth) + "-" + str(i + 1), "%Y-%m-%d").date()))
+    for i in range(date_firstSunday, days, 7):
+        date_list.append(
+            str(datetime.strptime(str(targetYear) + "-" + str(targetMonth) + "-" + str(i + 1), "%Y-%m-%d").date()))
+    return date_list
+
+
+def searchAllAvailableFields(session):
+    date_list = getDateList()
+    field_list = ['A', 'B', 'C', 'D', 'E', 'H', 'I']
+
+    for field in field_list:
+        print(field)
+        for date in date_list:
+            URL = "http://www.futsalbase.com/api/reservation/allList/?stadium=" + field + "&date=" + date
+            res = session.get(URL)
+            if res.ok:
+                for element in res.json().get('data'):
+                    if 'szDInfo' not in element.keys():
+                        print(element)
+    print("----end")
+
+
+if __name__ == '__main__':
+
+    # TO-DO
+    # 1. logger
+    # 2. Kakao Notification
+    # 3. actually making reservation
+
+    LOGIN_INFO = {
+        "id": "dataenggu",
+        "password": "Solda9010!"
+    }
+    with requests.session() as session:
+        login(LOGIN_INFO, session)
+        searchAllAvailableFields(session)
