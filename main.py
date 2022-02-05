@@ -11,6 +11,7 @@ def login(loginInfo, session):
     # activate session
     res = session.post(URL, params)
     print("[Login Response Code] : ", res.status_code)
+    return res.json().get("user").get("szId")
 
 
 def getDateList():
@@ -35,24 +36,42 @@ def getDateList():
     return date_list
 
 
-def searchAllAvailableFields(session):
+def searchAllAvailableFields(session, target_date, target_time):
     date_list = getDateList()
     field_list = ['A', 'B', 'C', 'D', 'E', 'H', 'I']
 
+    result_dictionary = {}
+
     for field in field_list:
-        print(field)
         for date in date_list:
             URL = "http://www.futsalbase.com/api/reservation/allList/?stadium=" + field + "&date=" + date
             res = session.get(URL)
-            if res.ok:
-                for element in res.json().get('data'):
-                    if 'szDInfo' not in element.keys():
-                        print(element)
-    print("----end")
+            if not res.ok: continue
+            for element in res.json().get('data'):
+                if 'szDInfo' not in element.keys():  # if not reserved
+                    if target_date and str(element.get('ssdate')) not in target_date: continue
+                    if target_time and not isTargetTimeIncluded(element.get('strtime'), target_time): continue
+                    result_dictionary[field] = element
+    return result_dictionary
+
+
+def isTargetTimeIncluded(available_time, target_time):
+    return str(available_time).strip() in target_time
+
+
+def reserveGround(result_dictionary, szId, session):
+    URL = "http://www.futsalbase.com/api/reservation/addList"
+    params = {
+        "szId": szId,
+        "szStadium": "",
+        "szDDate": "",
+        "selectedList": []
+    }
+    print(params)
+    # res = session.post(URL, params)
 
 
 if __name__ == '__main__':
-
     # TO-DO
     # 1. logger
     # 2. Kakao Notification
@@ -62,6 +81,20 @@ if __name__ == '__main__':
         "id": "dataenggu",
         "password": "Solda9010!"
     }
+
+    target_date = set([
+        '2022-03-26'
+    ])
+
+    target_time = set([
+        '02:00 ~ 04:00',
+    ])
+
     with requests.session() as session:
-        login(LOGIN_INFO, session)
-        searchAllAvailableFields(session)
+        szId = login(LOGIN_INFO, session)
+
+        result_dictionary = searchAllAvailableFields(session, target_date, target_time)
+        print(result_dictionary)
+
+        if result_dictionary:
+            reserveGround(result_dictionary, szId, session)
