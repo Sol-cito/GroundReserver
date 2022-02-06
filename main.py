@@ -1,4 +1,4 @@
-import requests, calendar, json
+import requests, calendar
 from datetime import datetime
 
 
@@ -11,6 +11,8 @@ def login(loginInfo, session):
     # activate session
     res = session.post(URL, params)
     print("[Login Response Code] : ", res.status_code)
+    if not res.ok:
+        raise EOFError
     return res.json().get("user").get("szId")
 
 
@@ -61,14 +63,27 @@ def isTargetTimeIncluded(available_time, target_time):
 
 def reserveGround(result_dictionary, szId, session):
     URL = "http://www.futsalbase.com/api/reservation/addList"
-    params = {
-        "szId": szId,
-        "szStadium": "",
-        "szDDate": "",
-        "selectedList": []
-    }
-    print(params)
-    # res = session.post(URL, params)
+
+    for availableField in result_dictionary.keys():
+        # headers = {
+        #     "Host": "www.futsalbase.com",
+        #     "Accept": "application/json, text/plain, */*",
+        #     "Authorization": "[object Object]",
+        #     "Content-Type": "application/json"
+        # }
+        params = {
+            "szId": szId,
+            "szStadium": availableField,
+            "szDDate": result_dictionary.get(availableField).get('ssdate'),
+            "seletedList": [result_dictionary.get(availableField)]
+        }
+        res = session.post(URL, json=params)
+        print("예약 결과 : ", res)
+        if res.ok:
+            print("[Reservation complete] ")
+        else:
+            print(res.content)
+        break
 
 
 if __name__ == '__main__':
@@ -76,6 +91,7 @@ if __name__ == '__main__':
     # 1. logger
     # 2. Kakao Notification
     # 3. actually making reservation
+    # 4. Error handling
 
     LOGIN_INFO = {
         "id": "dataenggu",
@@ -87,7 +103,7 @@ if __name__ == '__main__':
     ])
 
     target_time = set([
-        '02:00 ~ 04:00',
+        '04:00 ~ 06:00',
     ])
 
     with requests.session() as session:
