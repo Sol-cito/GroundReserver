@@ -36,7 +36,7 @@ def login(loginInfo, session):
     return res.json().get("user").get("szId")
 
 
-def getDateList():
+def getWeekendDateList():
     Logger.info("Execute getDateList()")
     targetYear = datetime.today().year
     targetMonth = datetime.today().month + 1
@@ -63,7 +63,7 @@ def getDateList():
 
 def searchAllAvailableFields(session, target_date, target_time):
     Logger.info("Execute searchAllAvailableFields()")
-    date_list = getDateList()
+    date_list = getWeekendDateList() if not target_date else list(target_date)
     field_list = ['A', 'B', 'C', 'D', 'E', 'H', 'I']
 
     result_dictionary = {}
@@ -99,27 +99,20 @@ def reserveGround(result_dictionary, szId, session):
             "szDDate": result_dictionary.get(availableField).get('ssdate'),
             "seletedList": [result_dictionary.get(availableField)]
         }
-        # res = session.post(URL, json=params)
-        res = {
-            "ok": "ok",
-            "status_code": "200"
-        }
-        Logger.info("Reservation Result : " + str(res))
-
-        # if res.ok:
-        #     print("[Reservation complete] ")
-        # else:
-        #     Logger.error("Reservation Fail ")
-        #     Logger.error("Fail Code : " + str(res.status_code))
-        # break
+        res = session.post(URL, json=params)
+        Logger.info('Reservation Response Code : ' + str(res.status_code))
+        if res.ok:
+            Logger.info("Reservation Success : " + str(result_dictionary.get(availableField)))
+        else:
+            Logger.error("Reservation Fail ")
+            Logger.error("Fail Code : " + str(res.status_code))
+        break
     Logger.info("End reserveGround()")
 
 
 if __name__ == '__main__':
     setLogger()
     Logger.info("Program Start-------------")
-    # TO-DO
-    # Kakao Notification
 
     LOGIN_INFO = {
         "id": "dataenggu",
@@ -133,7 +126,16 @@ if __name__ == '__main__':
     Logger.info(target_date)
 
     target_time = set([
-        '04:00 ~ 06:00',
+        '04:00 ~ 06:00', # for test
+        '10:00 ~ 12:00',
+        '11:00 ~ 13:00',
+        '12:00 ~ 14:00',
+        '13:00 ~ 15:00',
+        '14:00 ~ 16:00',
+        '15:00 ~ 17:00',
+        '16:00 ~ 18:00',
+        '17:00 ~ 19:00',
+        '18:00 ~ 20:00',
     ])
 
     Logger.info(target_time)
@@ -145,7 +147,7 @@ if __name__ == '__main__':
             result_dictionary = searchAllAvailableFields(session, target_date, target_time)
 
             if result_dictionary:
-                reserveGround(result_dictionary, szId, session)
+                # reserveGround(result_dictionary, szId, session)
     except Exception as e:
         Logger.info("Program End with Error")
     finally:
