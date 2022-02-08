@@ -1,0 +1,56 @@
+2022-02-08 19:45:01,807 [Ground Reserver] INFO / Execute login()
+2022-02-08 19:45:01,937 [Ground Reserver] INFO / Login Response Code : 200
+2022-02-08 19:45:01,937 [Ground Reserver] INFO / Login complete
+2022-02-08 19:53:54,399 [Ground Reserver] INFO / Program Start-------------
+2022-02-08 19:54:30,604 [Ground Reserver] INFO / Program Start-------------
+2022-02-08 19:54:30,604 [Ground Reserver] INFO / {'2022-03-26'}
+2022-02-08 19:54:30,604 [Ground Reserver] INFO / {'04:00 ~ 06:00'}
+2022-02-08 19:54:30,604 [Ground Reserver] INFO / Execute login()
+2022-02-08 19:54:30,728 [Ground Reserver] INFO / Login Response Code : 200
+2022-02-08 19:54:30,728 [Ground Reserver] INFO / Login complete
+2022-02-08 19:54:30,728 [Ground Reserver] INFO / End login()
+2022-02-08 19:54:30,729 [Ground Reserver] INFO / Execute searchAllAvailableFields()
+2022-02-08 19:54:30,730 [Ground Reserver] INFO / Execute getDateList()
+2022-02-08 19:54:30,740 [Ground Reserver] INFO / ['2022-03-05', '2022-03-12', '2022-03-19', '2022-03-26', '2022-03-06', '2022-03-13', '2022-03-20', '2022-03-27']
+2022-02-08 19:54:30,740 [Ground Reserver] INFO / End getDateList()
+2022-02-08 19:54:38,725 [Ground Reserver] INFO / {'B': {'id': 2, 'ssdate': '2022-03-26', 'nnprice': 115000, 'strtime': '04:00 ~ 06:00', 'szDTime': 'L', 'szState': '', 'szPDate': '', 'szManager': '', 'message': ''}, 'E': {'id': 2, 'ssdate': '2022-03-26', 'nnprice': 115000, 'strtime': '04:00 ~ 06:00', 'szDTime': 'L', 'szState': '', 'szPDate': '', 'szManager': '', 'message': ''}, 'H': {'id': 2, 'ssdate': '2022-03-26', 'nnprice': 105000, 'strtime': '04:00 ~ 06:00', 'szDTime': 'L', 'szState': '', 'szPDate': '', 'szManager': '', 'message': ''}}
+2022-02-08 19:54:38,725 [Ground Reserver] INFO / End searchAllAvailableFields()
+2022-02-08 19:54:38,725 [Ground Reserver] INFO / Start reserveGround()
+2022-02-08 19:54:38,726 [Ground Reserver] INFO / End reserveGround()
+2022-02-08 19:54:38,727 [Ground Reserver] INFO / Program End-------------
+2022-02-08 19:59:24,703 [Ground Reserver] INFO / Program Start-------------
+2022-02-08 19:59:24,703 [Ground Reserver] INFO / {'2022-03-26'}
+2022-02-08 19:59:24,704 [Ground Reserver] INFO / {'04:00 ~ 06:00'}
+2022-02-08 19:59:24,705 [Ground Reserver] INFO / Execute login()
+2022-02-08 19:59:24,845 [Ground Reserver] INFO / Login Response Code : 200
+2022-02-08 19:59:24,845 [Ground Reserver] INFO / End login()
+2022-02-08 19:59:24,846 [Ground Reserver] INFO / Execute searchAllAvailableFields()
+2022-02-08 19:59:24,846 [Ground Reserver] INFO / Execute getDateList()
+2022-02-08 19:59:24,854 [Ground Reserver] INFO / 2022-03-05Result : 2022-03-12Result : 2022-03-19Result : 2022-03-26Result : 2022-03-06Result : 2022-03-13Result : 2022-03-20Result : 2022-03-27
+2022-02-08 19:59:24,855 [Ground Reserver] INFO / End getDateList()
+2022-02-08 19:59:32,392 [Ground Reserver] INFO / BAllAvailableFields Result : EAllAvailableFields Result : H
+2022-02-08 19:59:32,392 [Ground Reserver] INFO / End searchAllAvailableFields()
+2022-02-08 19:59:32,392 [Ground Reserver] INFO / Start reserveGround()
+2022-02-08 19:59:32,393 [Ground Reserver] INFO / okReservation Result : status_code
+2022-02-08 19:59:32,393 [Ground Reserver] INFO / okReservation Result : status_code
+2022-02-08 19:59:32,393 [Ground Reserver] INFO / okReservation Result : status_code
+2022-02-08 19:59:32,394 [Ground Reserver] INFO / End reserveGround()
+2022-02-08 19:59:32,394 [Ground Reserver] INFO / Program End-------------
+2022-02-08 20:00:54,319 [Ground Reserver] INFO / Program Start-------------
+2022-02-08 20:00:54,319 [Ground Reserver] INFO / {'2022-03-26'}
+2022-02-08 20:00:54,319 [Ground Reserver] INFO / {'04:00 ~ 06:00'}
+2022-02-08 20:00:54,320 [Ground Reserver] INFO / Execute login()
+2022-02-08 20:00:54,441 [Ground Reserver] INFO / Login Response Code : 200
+2022-02-08 20:00:54,441 [Ground Reserver] INFO / End login()
+2022-02-08 20:00:54,441 [Ground Reserver] INFO / Execute searchAllAvailableFields()
+2022-02-08 20:00:54,441 [Ground Reserver] INFO / Execute getDateList()
+2022-02-08 20:00:54,446 [Ground Reserver] INFO / Result : ['2022-03-05', '2022-03-12', '2022-03-19', '2022-03-26', '2022-03-06', '2022-03-13', '2022-03-20', '2022-03-27']
+2022-02-08 20:00:54,446 [Ground Reserver] INFO / End getDateList()
+2022-02-08 20:01:01,919 [Ground Reserver] INFO / AllAvailableFields Result : {'B': {'id': 2, 'ssdate': '2022-03-26', 'nnprice': 115000, 'strtime': '04:00 ~ 06:00', 'szDTime': 'L', 'szState': '', 'szPDate': '', 'szManager': '', 'message': ''}, 'E': {'id': 2, 'ssdate': '2022-03-26', 'nnprice': 115000, 'strtime': '04:00 ~ 06:00', 'szDTime': 'L', 'szState': '', 'szPDate': '', 'szManager': '', 'message': ''}, 'H': {'id': 2, 'ssdate': '2022-03-26', 'nnprice': 105000, 'strtime': '04:00 ~ 06:00', 'szDTime': 'L', 'szState': '', 'szPDate': '', 'szManager': '', 'message': ''}}
+2022-02-08 20:01:01,919 [Ground Reserver] INFO / End searchAllAvailableFields()
+2022-02-08 20:01:01,919 [Ground Reserver] INFO / Start reserveGround()
+2022-02-08 20:01:01,919 [Ground Reserver] INFO / Reservation Result : {'ok': 'ok', 'status_code': '200'}
+2022-02-08 20:01:01,920 [Ground Reserver] INFO / Reservation Result : {'ok': 'ok', 'status_code': '200'}
+2022-02-08 20:01:01,920 [Ground Reserver] INFO / Reservation Result : {'ok': 'ok', 'status_code': '200'}
+2022-02-08 20:01:01,920 [Ground Reserver] INFO / End reserveGround()
+2022-02-08 20:01:01,920 [Ground Reserver] INFO / Program End-------------
