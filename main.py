@@ -31,7 +31,7 @@ def login(loginInfo, session):
     Logger.info('Login Response Code : ' + str(res.status_code))
     if not res.ok:
         Logger.error("Login fail")
-        raise EOFError
+        raise Exception
     Logger.info("End login()")
     return res.json().get("user").get("szId")
 
@@ -106,11 +106,11 @@ def reserveGround(result_dictionary, szId, session):
         }
         Logger.info("Reservation Result : " + str(res))
 
-        print("예약 결과 : ", res)
         # if res.ok:
         #     print("[Reservation complete] ")
         # else:
-        #     print(res.content)
+        #     Logger.error("Reservation Fail ")
+        #     Logger.error("Fail Code : " + str(res.status_code))
         # break
     Logger.info("End reserveGround()")
 
@@ -119,10 +119,7 @@ if __name__ == '__main__':
     setLogger()
     Logger.info("Program Start-------------")
     # TO-DO
-    # 1. logger
-    # 2. Kakao Notification
-    # 3. actually making reservation
-    # 4. Error handling
+    # Kakao Notification
 
     LOGIN_INFO = {
         "id": "dataenggu",
@@ -141,13 +138,16 @@ if __name__ == '__main__':
 
     Logger.info(target_time)
 
-    with requests.session() as session:
-        szId = login(LOGIN_INFO, session)
+    try:
+        with requests.session() as session:
+            szId = login(LOGIN_INFO, session)
 
-        result_dictionary = searchAllAvailableFields(session, target_date, target_time)
+            result_dictionary = searchAllAvailableFields(session, target_date, target_time)
 
-        if result_dictionary:
-            reserveGround(result_dictionary, szId, session)
-
+            if result_dictionary:
+                reserveGround(result_dictionary, szId, session)
+    except Exception as e:
+        Logger.info("Program End with Error")
+    finally:
         print("--End--")
-    Logger.info("Program End-------------")
+        Logger.info("Program End-------------")
