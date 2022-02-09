@@ -1,4 +1,4 @@
-import requests, calendar, logging
+import requests, calendar, logging, time
 from datetime import datetime
 
 PROJECT_NAME = "Ground Reserver"
@@ -110,10 +110,31 @@ def reserveGround(result_dictionary, szId, session):
     Logger.info("End reserveGround()")
 
 
-if __name__ == '__main__':
+def executeReserver(LOGIN_INFO, target_date, target_time):
     setLogger()
     Logger.info("Program Start-------------")
+    Logger.info(target_date)
+    Logger.info(target_time)
 
+    while 1:
+        try:
+            print("Start-------------")
+            with requests.session() as session:
+                szId = login(LOGIN_INFO, session)
+
+                result_dictionary = searchAllAvailableFields(session, target_date, target_time)
+
+                if result_dictionary:
+                    reserveGround(result_dictionary, szId, session)
+        except Exception as e:
+            Logger.info("Program End with Error")
+        finally:
+            print("--End--")
+            Logger.info("Program End-------------")
+            time.sleep(10)
+
+
+if __name__ == '__main__':
     LOGIN_INFO = {
         "id": "dataenggu",
         "password": "Solda9010!"
@@ -123,10 +144,9 @@ if __name__ == '__main__':
         '2022-03-26'
     ])
 
-    Logger.info(target_date)
-
     target_time = set([
-        '04:00 ~ 06:00', # for test
+        # '04:00 ~ 06:00',  # for test
+        '09:00 ~ 11:00',
         '10:00 ~ 12:00',
         '11:00 ~ 13:00',
         '12:00 ~ 14:00',
@@ -138,18 +158,4 @@ if __name__ == '__main__':
         '18:00 ~ 20:00',
     ])
 
-    Logger.info(target_time)
-
-    try:
-        with requests.session() as session:
-            szId = login(LOGIN_INFO, session)
-
-            result_dictionary = searchAllAvailableFields(session, target_date, target_time)
-
-            if result_dictionary:
-                # reserveGround(result_dictionary, szId, session)
-    except Exception as e:
-        Logger.info("Program End with Error")
-    finally:
-        print("--End--")
-        Logger.info("Program End-------------")
+    executeReserver(LOGIN_INFO, target_date, target_time)
