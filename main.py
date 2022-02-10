@@ -1,4 +1,4 @@
-import requests, calendar, logging, time
+import requests, calendar, logging, time, json
 from datetime import datetime
 
 PROJECT_NAME = "Ground Reserver"
@@ -100,10 +100,17 @@ def reserveGround(result_dictionary, szId, session):
             "seletedList": [result_dictionary.get(availableField)]
         }
         res = session.post(URL, json=params)
+
+        sendKakaoMessageToMe(
+            '풋살장 빈 시간대 (' + str(result_dictionary.get(availableField).get('ssdate')) + ' ' +
+            str(result_dictionary.get(availableField).get('strtime')) + ') 발견하여 예약 Post 요청 보냄')
+
         Logger.info('Reservation Response Code : ' + str(res.status_code))
         if res.ok:
+            sendKakaoMessageToMe('풋살장 예약 성공!!!!!!!!!!!!')
             Logger.info("Reservation Success : " + str(result_dictionary.get(availableField)))
         else:
+            sendKakaoMessageToMe('풋살장 예약 실패--------')
             Logger.error("Reservation Fail ")
             Logger.error("Fail Code : " + str(res.status_code))
         break
@@ -132,6 +139,34 @@ def executeReserver(LOGIN_INFO, target_date, target_time):
             print("--End--")
             Logger.info("Program End-------------")
             time.sleep(10)
+
+
+def sendKakaoMessageToMe(inputText):
+    with open("kakaoKeyInfo.json", "r") as file:
+        kakaoKeyJsonData = json.load(file)
+
+    url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
+
+    headers = {
+        "Authorization": "Bearer " + kakaoKeyJsonData.get('access_token')
+    }
+
+    data = {
+        "template_object": json.dumps({
+            "object_type": "text",
+            "text": inputText,
+            "link": {
+                "web_url": "http://www.futsalbase.com/home",
+                "mobile_web_url": "http://www.futsalbase.com/home",
+            }
+        })
+    }
+
+    response = requests.post(url, headers=headers, data=data)
+    if response.json().get('result_code') == 0:
+        Logger.info('Successfully sent kakao message')
+    else:
+        Logger.error('Kakao message fail ' + str(response.json()))
 
 
 if __name__ == '__main__':
