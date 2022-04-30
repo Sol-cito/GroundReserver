@@ -9,6 +9,9 @@ TARGET_TIME_FILE = 'targetTime.txt'
 LOGIN_ERROR_MESSAGE_NO_USER = '등록되지 않은 사용자입니다.'
 LOGIN_ERROR_MESSAGE_INVALID_PASSWORD = '비밀번호가 일치하지 않습니다.'
 
+TARGET_DATE_LIST_FOR_USER = []
+TARGET_TIME_LIST_FOR_USER = []
+
 
 def setLogger():
     Logger.setLevel(logging.INFO)
@@ -36,7 +39,7 @@ def login(loginInfo, session):
     Logger.info('Login Response Code : ' + str(res.status_code))
 
     if res.status_code == 429:
-        raise ValueError('[Error] 용산 풋살장 서버측 에러입니다. 잠시 후 프로그램을 다시 시작하세요.')
+        raise ValueError('[Error] 너무 많은 로그인 시도로 인한 용산 풋살장 서버측 에러(429)입니다. login.txt에서 크롤링 간격을 길게 늘리고 다시 시도하세요.')
     if res.json().get('message') == LOGIN_ERROR_MESSAGE_NO_USER:
         Logger.error("Login fail")
         raise ValueError('[Error] 등록되지 않은 사용자입니다. ID를 다시 확인하세요.')
@@ -115,18 +118,13 @@ def reserveGround(result_dictionary, szId, session):
         }
         res = session.post(URL, json=params)
 
-        sendKakaoMessageToMe(
-            '풋살장 빈 시간대 (' + str(result_dictionary.get(availableField).get('ssdate')) + ' ' +
-            str(result_dictionary.get(availableField).get('strtime')) + ') 발견하여 예약 Post 요청 보냄')
-
         Logger.info('Reservation Response Code : ' + str(res.status_code))
         if res.ok:
-            sendKakaoMessageToMe('풋살장 예약 성공!!!!!!!!!!!!')
             Logger.info("Reservation Success : " + str(result_dictionary.get(availableField)))
-            print('풋살장 예약 성공!!!!!!!!!!!!')
-            print('예약 시간 : ', str(result_dictionary.get(availableField)))
+            print('[Success] 풋살장 예약 성공!!!!!!!!!!!!')
+            print(' - 예약 날짜 : ', str(result_dictionary.get(availableField).get('ssdate')))
+            print(' - 예약 시간 : ', str(result_dictionary.get(availableField).get('strtime')))
         else:
-            sendKakaoMessageToMe('풋살장 예약 실패--------')
             Logger.error("Reservation Fail ")
             Logger.error("Fail Code : " + str(res.status_code))
         break
@@ -137,6 +135,8 @@ def executeReserver(LOGIN_INFO, TARGET_DATE, TARGET_TIME, CRAWLING_TIME):
     setLogger()
     Logger.info("Program Start-------------")
     print("Crawling start.....크롤링 간격 : ", CRAWLING_TIME, 'sec')
+    print(' - 예약 타겟 날짜 : ', TARGET_DATE_LIST_FOR_USER)
+    print(' - 예약 타겟 시간 : ', TARGET_TIME_LIST_FOR_USER)
     Logger.info(TARGET_DATE)
     Logger.info(TARGET_TIME)
 
@@ -153,41 +153,13 @@ def executeReserver(LOGIN_INFO, TARGET_DATE, TARGET_TIME, CRAWLING_TIME):
                     print('예약 가능한 구장 없음..잠시 후 크롤링을 다시 시도합니다. 수행시간 : ' + str(datetime.now()))
             time.sleep(CRAWLING_TIME)
         except ValueError as e:
-            Logger.info("Program End with Error")
+            Logger.info(e)
             raise Exception(e)
         except Exception:
-            Logger.info("Program End with Error")
+            Logger.info(e)
             raise Exception('[Error] 구장 예약에 실패하였습니다. 개발자에게 문의하세요.')
         finally:
             Logger.info("Crawling End-------------")
-
-
-def sendKakaoMessageToMe(inputText):
-    with open("kakaoKeyInfo.json", "r") as file:
-        kakaoKeyJsonData = json.load(file)
-
-    url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
-
-    headers = {
-        "Authorization": "Bearer " + kakaoKeyJsonData.get('access_token')
-    }
-
-    data = {
-        "template_object": json.dumps({
-            "object_type": "text",
-            "text": inputText,
-            "link": {
-                "web_url": "http://www.futsalbase.com/home",
-                "mobile_web_url": "http://www.futsalbase.com/home",
-            }
-        })
-    }
-
-    response = requests.post(url, headers=headers, data=data)
-    if response.json().get('result_code') == 0:
-        Logger.info('Successfully sent kakao message')
-    else:
-        Logger.error('Kakao message fail ' + str(response.json()))
 
 
 def readLoginFile(LOGIN_INFO):
@@ -221,10 +193,15 @@ def readTargetDateFile(TARGET_DATE):
     try:
         f = open(TARGET_DATE_FILE)
         regax = r'\d{4}-\d{2}-\d{2}$'
+        lineCnt = 0
         for line in f:
             if not bool(re.match(regax, line.strip())):
                 raise ValueError()
             TARGET_DATE.add(line.strip())
+            TARGET_DATE_LIST_FOR_USER.append(line.strip())
+            lineCnt += 1
+        if lineCnt == 0:
+            raise Exception
     except ValueError:
         raise Exception("[Error] 날짜 형식이 'xxxx-xx-xx'가 아닙니다." + TARGET_DATE_FILE + " 파일을 다시 확인해주세요.")
     except Exception as e:
@@ -239,10 +216,15 @@ def readTargetTimeFile(TARGET_TIME):
     try:
         f = open(TARGET_TIME_FILE)
         regax = r'\d{2}:\d{2} ~ \d{2}:\d{2}$'
+        lineCnt = 0
         for line in f:
             if not bool(re.match(regax, line.strip())):
                 raise ValueError()
             TARGET_TIME.add(line.strip())
+            TARGET_TIME_LIST_FOR_USER.append(line.strip())
+            lineCnt +=1
+        if lineCnt == 0:
+            raise Exception
     except ValueError:
         raise Exception("[Error] 시간 형식이 'xx:xx ~ xx:xx'가 아닙니다." + TARGET_TIME_FILE + " 파일을 다시 확인해주세요.")
     except Exception as e:
