@@ -1,4 +1,4 @@
-import requests, calendar, logging, time, json
+import requests, calendar, logging, time, json, os
 from datetime import datetime
 
 PROJECT_NAME = "Ground Reserver"
@@ -31,7 +31,7 @@ def login(loginInfo, session):
     Logger.info('Login Response Code : ' + str(res.status_code))
     if not res.ok:
         Logger.error("Login fail")
-        raise Exception
+        raise Exception('[Error] 로그인에 실패하였습니다. ID/Password를 다시 확인하세요.')
     Logger.info("End login()")
     return res.json().get("user").get("szId")
 
@@ -109,6 +109,8 @@ def reserveGround(result_dictionary, szId, session):
         if res.ok:
             sendKakaoMessageToMe('풋살장 예약 성공!!!!!!!!!!!!')
             Logger.info("Reservation Success : " + str(result_dictionary.get(availableField)))
+            print('풋살장 예약 성공!!!!!!!!!!!!')
+            print('예약 시간 : ', str(result_dictionary.get(availableField)))
         else:
             sendKakaoMessageToMe('풋살장 예약 실패--------')
             Logger.error("Reservation Fail ")
@@ -133,8 +135,9 @@ def executeReserver(LOGIN_INFO, target_date, target_time):
 
                 if result_dictionary:
                     reserveGround(result_dictionary, szId, session)
-        except Exception as e:
+        except Exception:
             Logger.info("Program End with Error")
+            raise Exception('[Error] 구장 예약에 실패하였습니다. 개발자에게 문의하세요.')
         finally:
             print("--End--")
             Logger.info("Program End-------------")
@@ -169,28 +172,51 @@ def sendKakaoMessageToMe(inputText):
         Logger.error('Kakao message fail ' + str(response.json()))
 
 
+def openLoginFile(LOGIN_INFO):
+    f = None
+    try:
+        f = open('login.txt')
+        lineCnt = 0
+        for line in f:
+            if lineCnt == 0:
+                LOGIN_INFO["id"] = line.strip()
+            elif lineCnt == 1:
+                LOGIN_INFO["password"] = line.strip()
+            lineCnt += 1
+        if lineCnt < 1:
+            raise Exception('[Error] login.txt 파일을 다시 확인해주세요.')
+    except Exception as e:
+        raise Exception('[Error] login.txt 파일을 다시 확인해주세요.')
+    finally:
+        if f:
+            f.close()
+
+
 if __name__ == '__main__':
     LOGIN_INFO = {
-        "id": "dataenggu",
-        "password": "Solda9010!"
     }
 
-    target_date = set([
-        '2022-03-26'
-    ])
+    try:
+        openLoginFile(LOGIN_INFO)
 
-    target_time = set([
-        # '04:00 ~ 06:00',  # for test
-        '09:00 ~ 11:00',
-        '10:00 ~ 12:00',
-        '11:00 ~ 13:00',
-        '12:00 ~ 14:00',
-        '13:00 ~ 15:00',
-        '14:00 ~ 16:00',
-        '15:00 ~ 17:00',
-        '16:00 ~ 18:00',
-        '17:00 ~ 19:00',
-        '18:00 ~ 20:00',
-    ])
+        target_date = set([
+            '2022-05-14'
+        ])
 
-    executeReserver(LOGIN_INFO, target_date, target_time)
+        target_time = set([
+            # '04:00 ~ 06:00',  # for test
+            '09:00 ~ 11:00',
+            '10:00 ~ 12:00',
+            '11:00 ~ 13:00',
+            '12:00 ~ 14:00',
+            '13:00 ~ 15:00',
+            '14:00 ~ 16:00',
+            '15:00 ~ 17:00',
+            '16:00 ~ 18:00',
+            '17:00 ~ 19:00',
+            '18:00 ~ 20:00',
+        ])
+
+        executeReserver(LOGIN_INFO, target_date, target_time)
+    except Exception as E:
+        print(E)
