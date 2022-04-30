@@ -1,8 +1,13 @@
-import requests, calendar, logging, time, json, os
+import requests, calendar, logging, time, json, re
 from datetime import datetime
 
 PROJECT_NAME = "Ground Reserver"
 Logger = logging.getLogger(PROJECT_NAME)
+LOGIN_FILE = 'login.txt'
+TARGET_DATE_FILE = 'targetDate.txt'
+TARGET_TIME_FILE = 'targetTime.txt'
+LOGIN_ERROR_MESSAGE_NO_USER = '등록되지 않은 사용자입니다.'
+LOGIN_ERROR_MESSAGE_INVALID_PASSWORD = '비밀번호가 일치하지 않습니다.'
 
 
 def setLogger():
@@ -29,9 +34,15 @@ def login(loginInfo, session):
     # activate session
     res = session.post(URL, params)
     Logger.info('Login Response Code : ' + str(res.status_code))
-    if not res.ok:
+    if res.json().get('message') == LOGIN_ERROR_MESSAGE_NO_USER:
         Logger.error("Login fail")
-        raise Exception('[Error] 로그인에 실패하였습니다. ID/Password를 다시 확인하세요.')
+        raise ValueError('[Error] 등록되지 않은 사용자입니다. ID를 다시 확인하세요.')
+    elif res.json().get('message') == LOGIN_ERROR_MESSAGE_INVALID_PASSWORD:
+        Logger.error("Login fail")
+        raise ValueError('[Error] 비밀번호가 일치하지 않습니다. Password를 다시 확인하세요.')
+    elif not res.ok:
+        Logger.error("Login fail")
+        raise ValueError('[Error] 로그인에 실패하였습니다. ID/Password를 다시 확인하세요.')
     Logger.info("End login()")
     return res.json().get("user").get("szId")
 
@@ -61,9 +72,9 @@ def getWeekendDateList():
     return date_list
 
 
-def searchAllAvailableFields(session, target_date, target_time):
+def searchAllAvailableFields(session, TARGET_DATE, TARGET_TIME):
     Logger.info("Execute searchAllAvailableFields()")
-    date_list = getWeekendDateList() if not target_date else list(target_date)
+    date_list = getWeekendDateList() if not TARGET_DATE else list(TARGET_DATE)
     field_list = ['A', 'B', 'C', 'D', 'E', 'H', 'I']
 
     result_dictionary = {}
@@ -75,16 +86,16 @@ def searchAllAvailableFields(session, target_date, target_time):
             if not res.ok: continue
             for element in res.json().get('data'):
                 if 'szDInfo' not in element.keys():  # if not reserved
-                    if target_date and str(element.get('ssdate')) not in target_date: continue
-                    if target_time and not isTargetTimeIncluded(element.get('strtime'), target_time): continue
+                    if TARGET_DATE and str(element.get('ssdate')) not in TARGET_DATE: continue
+                    if TARGET_TIME and not isTargetTimeIncluded(element.get('strtime'), TARGET_TIME): continue
                     result_dictionary[field] = element
     Logger.info("AllAvailableFields Result : " + str(result_dictionary))
     Logger.info("End searchAllAvailableFields()")
     return result_dictionary
 
 
-def isTargetTimeIncluded(available_time, target_time):
-    return str(available_time).strip() in target_time
+def isTargetTimeIncluded(available_time, TARGET_TIME):
+    return str(available_time).strip() in TARGET_TIME
 
 
 def reserveGround(result_dictionary, szId, session):
@@ -119,29 +130,31 @@ def reserveGround(result_dictionary, szId, session):
     Logger.info("End reserveGround()")
 
 
-def executeReserver(LOGIN_INFO, target_date, target_time):
+def executeReserver(LOGIN_INFO, TARGET_DATE, TARGET_TIME):
     setLogger()
     Logger.info("Program Start-------------")
-    Logger.info(target_date)
-    Logger.info(target_time)
+    print("Crawling start.....")
+    Logger.info(TARGET_DATE)
+    Logger.info(TARGET_TIME)
 
     while 1:
         try:
-            print("Start-------------")
             with requests.session() as session:
                 szId = login(LOGIN_INFO, session)
 
-                result_dictionary = searchAllAvailableFields(session, target_date, target_time)
+                result_dictionary = searchAllAvailableFields(session, TARGET_DATE, TARGET_TIME)
 
                 if result_dictionary:
                     reserveGround(result_dictionary, szId, session)
-        except Exception:
+            time.sleep(10)
+        except ValueError as e:
+            Logger.info("Program End with Error")
+            raise Exception(e)
+        except Exception as e:
             Logger.info("Program End with Error")
             raise Exception('[Error] 구장 예약에 실패하였습니다. 개발자에게 문의하세요.')
         finally:
-            print("--End--")
-            Logger.info("Program End-------------")
-            time.sleep(10)
+            Logger.info("Crawling End-------------")
 
 
 def sendKakaoMessageToMe(inputText):
@@ -172,10 +185,10 @@ def sendKakaoMessageToMe(inputText):
         Logger.error('Kakao message fail ' + str(response.json()))
 
 
-def openLoginFile(LOGIN_INFO):
+def readLoginFile(LOGIN_INFO):
     f = None
     try:
-        f = open('login.txt')
+        f = open(LOGIN_FILE)
         lineCnt = 0
         for line in f:
             if lineCnt == 0:
@@ -184,39 +197,63 @@ def openLoginFile(LOGIN_INFO):
                 LOGIN_INFO["password"] = line.strip()
             lineCnt += 1
         if lineCnt < 1:
-            raise Exception('[Error] login.txt 파일을 다시 확인해주세요.')
+            raise ValueError()
+    except ValueError:
+        raise Exception('[Error] ID or PASSWORD가 누락되었습니다.', LOGIN_FILE, '파일을 다시 확인해주세요.')
+    except Exception:
+        raise Exception('[Error] ', LOGIN_FILE, '파일을 다시 확인해주세요.')
+    finally:
+        if f:
+            f.close()
+
+
+def readTargetDateFile(TARGET_DATE):
+    f = None
+    try:
+        f = open(TARGET_DATE_FILE)
+        regax = r'\d{4}-\d{2}-\d{2}$'
+        for line in f:
+            if not bool(re.match(regax, line.strip())):
+                raise ValueError()
+            TARGET_DATE.add(line.strip())
+    except ValueError:
+        raise Exception("[Error] 날짜 형식이 'xxxx-xx-xx'가 아닙니다.", TARGET_DATE_FILE, " 파일을 다시 확인해주세요.")
     except Exception as e:
-        raise Exception('[Error] login.txt 파일을 다시 확인해주세요.')
+        raise Exception('[Error] ', TARGET_DATE_FILE, ' 파일을 다시 확인해주세요.')
+    finally:
+        if f:
+            f.close()
+
+
+def readTargetTimeFile(TARGET_TIME):
+    f = None
+    try:
+        f = open(TARGET_TIME_FILE)
+        regax = r'\d{2}:\d{2} ~ \d{2}:\d{2}$'
+        for line in f:
+            if not bool(re.match(regax, line.strip())):
+                raise ValueError()
+            TARGET_TIME.add(line.strip())
+    except ValueError:
+        raise Exception("[Error] 시간 형식이 'xx:xx ~ xx:xx'가 아닙니다.", TARGET_TIME_FILE, " 파일을 다시 확인해주세요.")
+    except Exception as e:
+        print(e)
+        raise Exception('[Error] ', TARGET_TIME_FILE, ' 파일을 다시 확인해주세요.')
     finally:
         if f:
             f.close()
 
 
 if __name__ == '__main__':
-    LOGIN_INFO = {
-    }
+    LOGIN_INFO = {}
+    TARGET_DATE = set([])
+    TARGET_TIME = set([])
 
     try:
-        openLoginFile(LOGIN_INFO)
+        readLoginFile(LOGIN_INFO)
+        readTargetDateFile(TARGET_DATE)
+        readTargetTimeFile(TARGET_TIME)
 
-        target_date = set([
-            '2022-05-14'
-        ])
-
-        target_time = set([
-            # '04:00 ~ 06:00',  # for test
-            '09:00 ~ 11:00',
-            '10:00 ~ 12:00',
-            '11:00 ~ 13:00',
-            '12:00 ~ 14:00',
-            '13:00 ~ 15:00',
-            '14:00 ~ 16:00',
-            '15:00 ~ 17:00',
-            '16:00 ~ 18:00',
-            '17:00 ~ 19:00',
-            '18:00 ~ 20:00',
-        ])
-
-        executeReserver(LOGIN_INFO, target_date, target_time)
+        executeReserver(LOGIN_INFO, TARGET_DATE, TARGET_TIME)
     except Exception as E:
         print(E)
