@@ -34,6 +34,9 @@ def login(loginInfo, session):
     # activate session
     res = session.post(URL, params)
     Logger.info('Login Response Code : ' + str(res.status_code))
+
+    if res.status_code == 429:
+        raise ValueError('[Error] 용산 풋살장 서버측 에러입니다. 잠시 후 프로그램을 다시 시작하세요.')
     if res.json().get('message') == LOGIN_ERROR_MESSAGE_NO_USER:
         Logger.error("Login fail")
         raise ValueError('[Error] 등록되지 않은 사용자입니다. ID를 다시 확인하세요.')
@@ -130,10 +133,10 @@ def reserveGround(result_dictionary, szId, session):
     Logger.info("End reserveGround()")
 
 
-def executeReserver(LOGIN_INFO, TARGET_DATE, TARGET_TIME):
+def executeReserver(LOGIN_INFO, TARGET_DATE, TARGET_TIME, CRAWLING_TIME):
     setLogger()
     Logger.info("Program Start-------------")
-    print("Crawling start.....")
+    print("Crawling start.....크롤링 간격 : ", CRAWLING_TIME, 'sec')
     Logger.info(TARGET_DATE)
     Logger.info(TARGET_TIME)
 
@@ -146,11 +149,13 @@ def executeReserver(LOGIN_INFO, TARGET_DATE, TARGET_TIME):
 
                 if result_dictionary:
                     reserveGround(result_dictionary, szId, session)
-            time.sleep(10)
+                else:
+                    print('예약 가능한 구장 없음..잠시 후 크롤링을 다시 시도합니다. 수행시간 : ' + str(datetime.now()))
+            time.sleep(CRAWLING_TIME)
         except ValueError as e:
             Logger.info("Program End with Error")
             raise Exception(e)
-        except Exception as e:
+        except Exception:
             Logger.info("Program End with Error")
             raise Exception('[Error] 구장 예약에 실패하였습니다. 개발자에게 문의하세요.')
         finally:
@@ -187,6 +192,7 @@ def sendKakaoMessageToMe(inputText):
 
 def readLoginFile(LOGIN_INFO):
     f = None
+    crawlingTime = 60
     try:
         f = open(LOGIN_FILE)
         lineCnt = 0
@@ -195,13 +201,16 @@ def readLoginFile(LOGIN_INFO):
                 LOGIN_INFO["id"] = line.strip()
             elif lineCnt == 1:
                 LOGIN_INFO["password"] = line.strip()
+            elif lineCnt == 2:
+                crawlingTime = int(line.strip())
             lineCnt += 1
         if lineCnt < 1:
             raise ValueError()
+        return crawlingTime
     except ValueError:
-        raise Exception('[Error] ID or PASSWORD가 누락되었습니다.', LOGIN_FILE, '파일을 다시 확인해주세요.')
+        raise Exception('[Error] ID or PASSWORD가 누락되었습니다.' + LOGIN_FILE + ' 파일을 다시 확인해주세요.')
     except Exception:
-        raise Exception('[Error] ', LOGIN_FILE, '파일을 다시 확인해주세요.')
+        raise Exception('[Error] ' + LOGIN_FILE + ' 파일을 다시 확인해주세요.')
     finally:
         if f:
             f.close()
@@ -217,9 +226,9 @@ def readTargetDateFile(TARGET_DATE):
                 raise ValueError()
             TARGET_DATE.add(line.strip())
     except ValueError:
-        raise Exception("[Error] 날짜 형식이 'xxxx-xx-xx'가 아닙니다.", TARGET_DATE_FILE, " 파일을 다시 확인해주세요.")
+        raise Exception("[Error] 날짜 형식이 'xxxx-xx-xx'가 아닙니다." + TARGET_DATE_FILE + " 파일을 다시 확인해주세요.")
     except Exception as e:
-        raise Exception('[Error] ', TARGET_DATE_FILE, ' 파일을 다시 확인해주세요.')
+        raise Exception('[Error] ' + TARGET_DATE_FILE + ' 파일을 다시 확인해주세요.')
     finally:
         if f:
             f.close()
@@ -235,10 +244,9 @@ def readTargetTimeFile(TARGET_TIME):
                 raise ValueError()
             TARGET_TIME.add(line.strip())
     except ValueError:
-        raise Exception("[Error] 시간 형식이 'xx:xx ~ xx:xx'가 아닙니다.", TARGET_TIME_FILE, " 파일을 다시 확인해주세요.")
+        raise Exception("[Error] 시간 형식이 'xx:xx ~ xx:xx'가 아닙니다." + TARGET_TIME_FILE + " 파일을 다시 확인해주세요.")
     except Exception as e:
-        print(e)
-        raise Exception('[Error] ', TARGET_TIME_FILE, ' 파일을 다시 확인해주세요.')
+        raise Exception('[Error] ' + TARGET_TIME_FILE + ' 파일을 다시 확인해주세요.')
     finally:
         if f:
             f.close()
@@ -246,14 +254,17 @@ def readTargetTimeFile(TARGET_TIME):
 
 if __name__ == '__main__':
     LOGIN_INFO = {}
+    CRAWLING_TIME = 60
     TARGET_DATE = set([])
     TARGET_TIME = set([])
 
     try:
-        readLoginFile(LOGIN_INFO)
+        CRAWLING_TIME = readLoginFile(LOGIN_INFO)
         readTargetDateFile(TARGET_DATE)
         readTargetTimeFile(TARGET_TIME)
 
-        executeReserver(LOGIN_INFO, TARGET_DATE, TARGET_TIME)
+        executeReserver(LOGIN_INFO, TARGET_DATE, TARGET_TIME, CRAWLING_TIME)
     except Exception as E:
         print(E)
+        print('에러가 발생하여 프로그램을 종료합니다....')
+        time.sleep(5)
